@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
+# Source and documentation: https://github.com/plyzen/plyzen-event.sh
+
 # Example call
+# export PLYZEN_APIKEY=<your api key>
 # ./plyzen-event.sh --namespace foo --artifact bar --version 1.0 --stage test --activity deploy --event finish --result success
 
 DEFAULT_PLYZEN_ENDPOINT="https://in.plyzen.io/"
@@ -13,13 +16,13 @@ usage() {
     echo "--artifact <artifact name>" >&2
     echo "--version <artifact's version>" >&2
     echo "--stage <stage in the pipeline the event occurred>" >&2
-    echo "--instance <instance of the stage in case there are multiple> # optional defaults to \"1\"" >&2
+    echo "--instance <instance of the stage in case there are multiple> # optional; defaults to \"1\"" >&2
     echo "--activity [build|deployment|test]" >&2
     echo "--event [start|finish]" >&2
-    echo "--timestamp <timestamp in ISO 8601 format, e.g. $(date -u +'%FT%T.000Z')> # optional defaults to current timestamp as returned by \"\$(date -u +'%FT%T.000Z')\"" >&2
+    echo "--timestamp <timestamp in ISO 8601 format, e.g. $(date -u +'%FT%T.000Z')> # optional; defaults to current timestamp as returned by \"\$(date -u +'%FT%T.000Z')\"" >&2
     echo "--result [success|failure]" >&2
-    echo "--endpoint <url of the plyzen endpoint> # optional defaults to \"https://in.plyzen.io\" or the value of the environment variable PLYZEN_ENDPOINT" >&2
-    echo "--apikey <api key of the plyzen endpoint> # optional defaults the value of the environment variable PLYZEN_APIKEY - using the env variable is recommended" >&2
+    echo "--endpoint <url of the plyzen endpoint> # optional; defaults to \"https://in.plyzen.io\" or the value of the environment variable PLYZEN_ENDPOINT" >&2
+    echo "--apikey <api key of the plyzen endpoint> # optional; defaults the value of the environment variable PLYZEN_APIKEY - using the env variable is recommended" >&2
 }
 
 # Transform long options to short ones
