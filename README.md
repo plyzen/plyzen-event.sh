@@ -2,7 +2,7 @@
 
 ## Install
 
-1. plyzen-event.sh needs [curl](https://curl.haxx.se). Ensure curl is installed on the machine that runs the script. Test with:
+1. plyzen-event.sh relies on [curl](https://curl.haxx.se) to post pipeline events to [plyzen](https://plyzen.io). It falls back to [wget](https://www.gnu.org/software/wget/), but some versions of wget do not support POST requests. So you may want to ensure that curl is installed on the machine that runs the script. Test with:
     ```
     curl --version
     ```
@@ -52,3 +52,7 @@ Call ./plyzen-event.sh with the following paramters:
 --endpoint \<url of the plyzen endpoint\> # optional; defaults to "https://in.plyzen.io" or the value of the environment variable PLYZEN_ENDPOINT
   
 --apikey \<api key of the plyzen endpoint\> # optional; defaults the value of the environment variable PLYZEN_APIKEY - using the env variable is recommended
+
+## Known issues
+
+Does not work in Docker images [busybox](https://hub.docker.com/_/busybox) and [alpine](https://hub.docker.com/_/alpine), because their wget does not support `--method POST`.
