@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 # Source and documentation: https://github.com/plyzen/plyzen-event.sh
@@ -108,7 +108,7 @@ fi
 # check for mandatory parameters
 FAIL=false
 is_set() {
-    if [ -z ${!1} ]; then
+    if [ -z $(eval echo \$$1) ]; then
         lowercase_param=`echo $1 | tr '[:upper:]' '[:lower:]'`
         echo "Missing mandatory paramter --$lowercase_param" >&2
         FAIL=true
@@ -132,19 +132,45 @@ if $FAIL; then
     exit 2
 fi
 
-# cat << EOF
-curl --location --request POST $ENDPOINT \
---header "x-api-key: $APIKEY" \
---header "Content-Type: application/json" \
---data-raw "{
-    \"namespace\": \"$NAMESPACE\",
-    \"artifact\": \"$ARTIFACT\",
-    \"version\": \"$VERSION\",
-    \"stage\": \"$STAGE\",
-    \"instance\": \"$INSTANCE\",
-    \"activity\": \"$ACTIVITY\",
-    \"event\": \"$EVENT\",
-    \"timestamp\": \"$TIMESTAMP\",
-    \"result\": \"$RESULT\"
-}"
-# EOF
+if command -v curl &> /dev/null
+then
+    curl --location --request POST $ENDPOINT \
+        --header "x-api-key: $APIKEY" \
+        --header "Content-Type: application/json" \
+        --data "{
+            \"namespace\": \"$NAMESPACE\",
+            \"artifact\": \"$ARTIFACT\",
+            \"version\": \"$VERSION\",
+            \"stage\": \"$STAGE\",
+            \"instance\": \"$INSTANCE\",
+            \"activity\": \"$ACTIVITY\",
+            \"event\": \"$EVENT\",
+            \"timestamp\": \"$TIMESTAMP\",
+            \"result\": \"$RESULT\"
+        }"
+else
+    echo "curl could not be found. Trying wget ..."
+    if command -v wget &> /dev/null
+    then
+        wget --quiet \
+            --method POST \
+            --timeout=0 \
+            --header "x-api-key: $APIKEY" \
+            --header 'Content-Type: application/json' \
+            --body-data "{
+                \"namespace\": \"$NAMESPACE\",
+                \"artifact\": \"$ARTIFACT\",
+                \"version\": \"$VERSION\",
+                \"stage\": \"$STAGE\",
+                \"instance\": \"$INSTANCE\",
+                \"activity\": \"$ACTIVITY\",
+                \"event\": \"$EVENT\",
+                \"timestamp\": \"$TIMESTAMP\",
+                \"result\": \"$RESULT\"
+            }" \
+            $ENDPOINT
+    else
+        echo "wget could not be found. Either install wget or curl and run again."
+        exit 2
+    fi
+fi
