@@ -53,6 +53,8 @@ Call ./plyzen-event.sh with the following paramters:
   
 --apikey \<api key of the plyzen endpoint\> # optional; defaults the value of the environment variable PLYZEN_APIKEY - using the env variable is recommended
 
+--proxy \<proxy url\> # optional; defaults the value of the environment variable PLYZEN_PROXY
+
 ## Known issues
 
 Does not work in Docker images [busybox](https://hub.docker.com/_/busybox) and [alpine](https://hub.docker.com/_/alpine), because their wget does not support `--method POST`.
