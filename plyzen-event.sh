@@ -23,6 +23,7 @@ usage() {
     echo "--result [success|failure]" >&2
     echo "--endpoint <url of the plyzen endpoint> # optional; defaults to \"https://in.plyzen.io\" or the value of the environment variable PLYZEN_ENDPOINT" >&2
     echo "--apikey <api key of the plyzen endpoint> # optional; defaults the value of the environment variable PLYZEN_APIKEY - using the env variable is recommended" >&2
+    echo "--proxy <proxy url> # optional; defaults the value of the environment variable PLYZEN_PROXY" >&2
 }
 
 # Transform long options to short ones
@@ -40,6 +41,7 @@ for arg in "$@"; do
     "--result") set -- "$@" "-r" ;;
     "--endpoint") set -- "$@" "-p" ;;
     "--apikey") set -- "$@" "-k" ;;
+    "--proxy") set -- "$@" "-x" ;;
     "--help") set -- "$@" "-h" ;;
     -*) echo "Illegal argument ${arg}"; usage; exit 2;;
     *) set -- "$@" "$arg"
@@ -47,7 +49,7 @@ for arg in "$@"; do
 done
 
 # Parse short options
-while getopts ":n:a:v:s:i:c:e:t:r:p:k:" opt; do
+while getopts ":n:a:v:s:i:c:e:t:r:p:k:x:" opt; do
   case $opt in
     n) NAMESPACE="$OPTARG"
     ;;
@@ -70,6 +72,8 @@ while getopts ":n:a:v:s:i:c:e:t:r:p:k:" opt; do
     p) ENDPOINT="$OPTARG"
     ;;
     k) APIKEY="$OPTARG"
+    ;;
+    x) PROXY="$OPTARG"
     ;;
     h) usage
        exit 1
@@ -105,6 +109,11 @@ if [ -z $APIKEY ]; then
     APIKEY=$PLYZEN_APIKEY
 fi
 
+# set default proxy, if not provided
+if [ -z $PROXY ]; then
+    PROXY=$PLYZEN_PROXY
+fi
+
 # check for mandatory parameters
 FAIL=false
 is_set() {
@@ -135,6 +144,7 @@ fi
 if command -v curl &> /dev/null
 then
     curl --location --request POST $ENDPOINT \
+        $(if [ ! -z $PROXY ]; then echo "-x $PROXY"; else echo ""; fi) \
         --header "x-api-key: $APIKEY" \
         --header "Content-Type: application/json" \
         --data "{
@@ -168,6 +178,7 @@ else
                 \"timestamp\": \"$TIMESTAMP\",
                 \"result\": \"$RESULT\"
             }" \
+            $(if [ ! -z $PROXY ]; then echo "-e use_proxy=yes -e http_proxy=$PROXY"; else echo ""; fi) \
             $ENDPOINT
     else
         echo "wget could not be found. Either install wget or curl and run again."
