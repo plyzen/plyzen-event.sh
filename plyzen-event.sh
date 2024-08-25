@@ -145,7 +145,7 @@ if command -v curl &> /dev/null
 then
     curl --location --request POST $ENDPOINT \
         $(if [ ! -z $PROXY ]; then echo "-x $PROXY"; else echo ""; fi) \
-        --header "x-api-key: $APIKEY" \
+        --header "Authorization: $APIKEY" \
         --header "Content-Type: application/json" \
         --data "{
             \"namespace\": \"$NAMESPACE\",
@@ -165,7 +165,7 @@ else
         wget --quiet \
             --method POST \
             --timeout=0 \
-            --header "x-api-key: $APIKEY" \
+            --header "Authorization: $APIKEY" \
             --header 'Content-Type: application/json' \
             --body-data "{
                 \"namespace\": \"$NAMESPACE\",
