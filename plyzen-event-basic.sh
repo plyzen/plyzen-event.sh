@@ -5,7 +5,7 @@ set -e
 
 # Example call
 # export PLYZEN_APIKEY=<your api key>
-# ./plyzen-event.sh --namespace foo --artifact bar --version 1.0 --stage test --activity deploy --event finish --result success
+# ./plyzen-event.sh --namespace foo --artifact bar --version 1.0 --environment test --activity deploy --event finish --result success
 
 DEFAULT_PLYZEN_ENDPOINT="https://in.plyzen.io/"
 
@@ -15,8 +15,7 @@ usage() {
     echo "--namespace <project name>" >&2
     echo "--artifact <artifact name>" >&2
     echo "--version <artifact's version>" >&2
-    echo "--stage <stage in the pipeline the event occurred>" >&2
-    echo "--instance <instance of the stage in case there are multiple> # optional; defaults to \"1\"" >&2
+    echo "--environment <environment in the pipeline process the event occurred>" >&2
     echo "--activity [build|deployment|test]" >&2
     echo "--event [start|finish]" >&2
     echo "--timestamp <timestamp in ISO 8601 format, e.g. $(date -u +'%FT%T.000Z')> # optional; defaults to current timestamp as returned by \"\$(date -u +'%FT%T.000Z')\"" >&2
@@ -33,8 +32,7 @@ for arg in "$@"; do
     "--namespace") set -- "$@" "-n" ;;
     "--artifact") set -- "$@" "-a" ;;
     "--version") set -- "$@" "-v" ;;
-    "--stage") set -- "$@" "-s" ;;
-    "--instance") set -- "$@" "-i" ;;
+    "--environment") set -- "$@" "-s" ;;
     "--activity") set -- "$@" "-c" ;;
     "--event") set -- "$@" "-e" ;;
     "--timestamp") set -- "$@" "-t" ;;
@@ -49,7 +47,7 @@ for arg in "$@"; do
 done
 
 # Parse short options
-while getopts ":n:a:v:s:i:c:e:t:r:p:k:x:" opt; do
+while getopts ":n:a:v:s:c:e:t:r:p:k:x:" opt; do
   case $opt in
     n) NAMESPACE="$OPTARG"
     ;;
@@ -57,9 +55,7 @@ while getopts ":n:a:v:s:i:c:e:t:r:p:k:x:" opt; do
     ;;
     v) VERSION="$OPTARG"
     ;;
-    s) STAGE="$OPTARG"
-    ;;
-    i) INSTANCE="$OPTARG"
+    s) ENVIRONMENT="$OPTARG"
     ;;
     c) ACTIVITY="$OPTARG"
     ;;
@@ -84,11 +80,6 @@ while getopts ":n:a:v:s:i:c:e:t:r:p:k:x:" opt; do
   esac
 done
 shift $(expr $OPTIND - 1) # remove options from positional parameters
-
-# instance defaults to "1"
-if [ -z $INSTANCE ]; then
-    INSTANCE="1"
-fi
 
 # set current timestamp as default, if not provided
 if [ -z $TIMESTAMP ]; then
@@ -117,7 +108,7 @@ fi
 # check for mandatory parameters
 FAIL=false
 is_set() {
-    if [ -z $(eval echo \$$1) ]; then
+    if [ -z "$(eval echo \$$1)" ]; then
         lowercase_param=`echo $1 | tr '[:upper:]' '[:lower:]'`
         echo "Missing mandatory paramter --$lowercase_param" >&2
         FAIL=true
@@ -127,8 +118,7 @@ is_set() {
 is_set "NAMESPACE"
 is_set "ARTIFACT"
 is_set "VERSION"
-is_set "STAGE"
-is_set "INSTANCE"
+is_set "ENVIRONMENT"
 is_set "ACTIVITY"
 is_set "EVENT"
 is_set "TIMESTAMP"
@@ -151,8 +141,7 @@ then
             \"namespace\": \"$NAMESPACE\",
             \"artifact\": \"$ARTIFACT\",
             \"version\": \"$VERSION\",
-            \"stage\": \"$STAGE\",
-            \"instance\": \"$INSTANCE\",
+            \"environment\": \"$ENVIRONMENT\",
             \"activity\": \"$ACTIVITY\",
             \"event\": \"$EVENT\",
             \"timestamp\": \"$TIMESTAMP\",
@@ -171,8 +160,7 @@ else
                 \"namespace\": \"$NAMESPACE\",
                 \"artifact\": \"$ARTIFACT\",
                 \"version\": \"$VERSION\",
-                \"stage\": \"$STAGE\",
-                \"instance\": \"$INSTANCE\",
+                \"environment\": \"$ENVIRONMENT\",
                 \"activity\": \"$ACTIVITY\",
                 \"event\": \"$EVENT\",
                 \"timestamp\": \"$TIMESTAMP\",

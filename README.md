@@ -1,5 +1,7 @@
 # plyzen-event.sh
 
+**Note:** The former `plyzen-event.sh` has been renamed to `plyzen-event-basic.sh`. The parameter `--stage` has been renamed to `--environment` and `--instance` has been removed.
+
 ## About
 
 This repo contains tools for instrumenting your CI/CD pipeline to send data to [plyzen](https://plyzen.io).
@@ -21,7 +23,6 @@ For example, a simple pipeline event might look like this
    "artifact": "foo-api",
    "version": "2.1",
    "environment": "ci",
-   "instance": "1",
    "activity": "build",
    "event": "finish",
    "timestamp": "2023-04-06T16:35:26.492Z",
@@ -31,7 +32,7 @@ For example, a simple pipeline event might look like this
 
 Pipeline events are submitted to the plyzen ingest endpoint (https://in.plyzen.io).
 
-To facilitate instrumentation, this repo provides two shell scripts.
+To facilitate instrumentation, this repo provides two shell scripts. They support a subset of the attributes defined in the plyzen ingest schemas. We recommend adapting them to your specific needs. The full schema specifications can be found at [plyzen-instrumentation-guide](https://github.com/plyzen/plyzen-instrumentation-guide).
 
 ### plyzen-event-basic.sh
 
@@ -53,14 +54,14 @@ Whenever you need to send an event related to exactly one version of a software 
     # clone plyzen repo
     - git clone --depth=1 https://github.com/plyzen/plyzen-event.sh.git plyzen
     # submit start event
-    - plyzen/plyzen-event-basic.sh --namespace narwhal --artifact "$APP" --version "$APP_VERSION" --environment ci --instance "$CI_PROJECT_NAME/$CI_PIPELINE_ID" --activity build --event start --result success
+    - plyzen/plyzen-event-basic.sh --namespace narwhal --artifact "$APP" --version "$APP_VERSION" --environment ci --activity build --event start --result success
   script:
     # ... here is where the build happens...
     # We need to remember whether the "script" block (i.e. the build) ran or aborted. In newer versions of GitLab you can simplify this with the CI_JOB_STATUS variable.
     - touch plyzen/build_successful
   after_script:
     # submit end event with "success" or "failure" to plyzen
-    - plyzen/plyzen-event-basic.sh --namespace narwhal --artifact "$APP" --version "$(cat app.version)" --environment ci --instance "$CI_PROJECT_NAME/$CI_PIPELINE_ID" --activity build --event finish --result $(if test -f "plyzen/build_successful"; then echo "success"; else echo "failure"; fi)
+    - plyzen/plyzen-event-basic.sh --namespace narwhal --artifact "$APP" --version "$(cat app.version)" --environment ci --activity build --event finish --result $(if test -f "plyzen/build_successful"; then echo "success"; else echo "failure"; fi)
 ```
 
 #### Example of instrumentation in GoCD
@@ -86,21 +87,21 @@ stages:
                   command: sh
                   arguments:
                     - -c
-                    - 'plyzen/plyzen-event-basic.sh --namespace narwhal --artifact foo-api --version "$(cat version.txt)" --environment ci --instance "ci/$GO_PIPELINE_NAME" --activity build --event start --result success'
+                    - 'plyzen/plyzen-event-basic.sh --namespace narwhal --artifact foo-api --version "$(cat version.txt)" --environment ci --activity build --event start --result success'
               # ... execute build tasks ...
               - exec:
                   # submit end event in case of success
                   command: sh
                   arguments:
                     - -c
-                    - 'plyzen/plyzen-event-basic.sh --namespace narwhal --artifact foo-api --version "$(cat version.txt)" --environment ci --instance "ci/$GO_PIPELINE_NAME" --activity build --event finish --result success'
+                    - 'plyzen/plyzen-event-basic.sh --namespace narwhal --artifact foo-api --version "$(cat version.txt)" --environment ci --activity build --event finish --result success'
                   run_if: passed
               - exec:
                   # submit end event in case of error
                   command: sh
                   arguments:
                     - -c
-                    - 'plyzen/plyzen-event-basic.sh --namespace narwhal --artifact foo-api --version "$(cat version.txt)" --environment ci --instance "ci/$GO_PIPELINE_NAME" --activity build --event finish --result failure'
+                    - 'plyzen/plyzen-event-basic.sh --namespace narwhal --artifact foo-api --version "$(cat version.txt)" --environment ci --activity build --event finish --result failure'
                   run_if: failed
 # ...
 ```
@@ -141,7 +142,7 @@ plyzen-event-advanced.sh can process this list and send it as events to plyzen.
                 command: sh
                 arguments:
                   - -c
-                  - 'plyzen/plyzen-event-advanced.sh --activitycorrelationid "prod-deploy/$GO_DEPENDENCY_LABEL_INFORM_PLYZEN_PROD_DEPLOY_START" --namespace narwhal --environment prod --instance "prod/1" --activityname "prod-deploy" --activitytype deployment --event finish --result success --artifactfile deployedVersions.txt'
+                  - 'plyzen/plyzen-event-advanced.sh --activitycorrelationid "prod-deploy/$GO_DEPENDENCY_LABEL_INFORM_PLYZEN_PROD_DEPLOY_START" --namespace narwhal --environment prod --activityname "prod-deploy" --activitytype deployment --event finish --result success --artifactfile deployedVersions.txt'
                 run_if: passed
 ```
 
@@ -171,46 +172,45 @@ It is recommended to store these in environment variables like `PLYZEN_ENDPOINT`
 
 ## Install
 
-1. plyzen-event.sh relies on [curl](https://curl.haxx.se) to post pipeline events to [plyzen](https://plyzen.io). It falls back to [wget](https://www.gnu.org/software/wget/), but some versions of wget do not support POST requests. So you may want to ensure that curl is installed on the machine that runs the script. Test with:
-    ```
-    curl --version
-    ```
-1. Download plyzen-event.sh:
-    ```
-    curl -L https://raw.githubusercontent.com/plyzen/plyzen-event.sh/master/plyzen-event.sh --output plyzen-event.sh
-    ```
-1. Make executable:
-    ```
-    chmod +x plyzen-event.sh
-    ```
-1. Set plyzen api key:
-    ```
-    export PLYZEN_APIKEY=<your api key>
-    ```
+The recommended way is to clone this repo in your pipeline:
+```
+git clone --depth=1 https://github.com/plyzen/plyzen-event.sh.git plyzen
+```
+
+Alternatively, download individual scripts:
+```
+curl -L https://raw.githubusercontent.com/plyzen/plyzen-event.sh/master/plyzen-event-basic.sh --output plyzen-event-basic.sh
+chmod +x plyzen-event-basic.sh
+```
+
+Both scripts require [curl](https://curl.haxx.se). plyzen-event-basic.sh falls back to [wget](https://www.gnu.org/software/wget/), but some versions of wget do not support POST requests. plyzen-event-advanced.sh requires curl (no wget fallback).
+
+Set your plyzen API key:
+```
+export PLYZEN_APIKEY=<your api key>
+```
 
 ## Usage
 
 ### Example call
 
 ```
-./plyzen-event.sh --namespace foo --artifact bar --version 1.0 --stage test --activity deploy --event finish --result success
+./plyzen-event-basic.sh --namespace foo --artifact bar --version 1.0 --environment test --activity deployment --event finish --result success
 ```
 
 ### Parameters
 
-Call ./plyzen-event.sh with the following paramters:
+Call ./plyzen-event-basic.sh with the following parameters:
 
 --namespace \<project name\>
-  
+
 --artifact \<artifact name\>
-  
+
 --version \<artifact's version\>
 
---stage \<stage in the pipeline the event occurred\>
-  
---instance \<instance of the stage in case there are multiple\> # optional; defaults to "1"
-  
---activity \[build|deployment|test\]
+--environment \<environment in the pipeline the event occurred\>
+
+--activity \[build|deployment|test|alarm\]
 
 --event \[start|finish\]
 
@@ -219,7 +219,7 @@ Call ./plyzen-event.sh with the following paramters:
 --result \[success|failure\]
 
 --endpoint \<url of the plyzen endpoint\> # optional; defaults to "https://in.plyzen.io" or the value of the environment variable PLYZEN_ENDPOINT
-  
+
 --apikey \<api key of the plyzen endpoint\> # optional; defaults the value of the environment variable PLYZEN_APIKEY - using the env variable is recommended
 
 ## Known issues
